@@ -63,3 +63,29 @@ map_chr(people, ~ .x[["mass"]])
 # could use something like this:
 map_chr(people, ~ .x[["mass"]]) %>% 
   readr::parse_number(na = "unknown")
+
+
+# .f can be a formula -----------------------------------------------------
+
+# .f can be a string or integer -------------------------------------------
+
+# map(.x, .f = "some_name") is equivalent to map(.x, ~ .x[[some_name]])
+# map(.x, .f = some_number) is equivalent to map(.x, ~ .x[[some_number]])
+
+# so:
+map_chr(people, ~ .x[["hair_color"]])
+# becomes:
+map_chr(people, "hair_color")
+map_chr(people, 4)
+
+
+# .f can be a function ----------------------------------------------------
+
+# map(.x, .f = some_function, ...) is equivalent to map(.x, ~ some_function(.x, ...))
+
+# Pull out starships for eaach element in people
+char_starships <- map(people, "starships")
+char_starships
+# Now get the length of each:
+map(char_starships, length)
+map_int(char_starships, length)
