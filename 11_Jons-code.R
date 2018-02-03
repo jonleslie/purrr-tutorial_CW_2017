@@ -1,4 +1,6 @@
 library(tidyverse)
+library(skimr)
+library(data.tree)
 load("data/swapi.rda")
 
 str(people, 2)
@@ -41,7 +43,7 @@ map(people, ~planet_lookup[[.x$homeworld]]) %>% str()
 # Friends of map() --------------------------------------------------------
 
 # names
-people <- people %>% set_names(map_chr(people, "name"))
+people <- people %>% set_names(map_chr(people, "name")) # map_chr(people, ~.x[["name"]])
 people
 
 # How many starships has each character been in?
@@ -89,3 +91,88 @@ char_starships
 # Now get the length of each:
 map(char_starships, length)
 map_int(char_starships, length)
+# In one go:
+map(people, "starships") %>% map_int(length)
+# is equivalent to:
+map_int(people, ~ length(.x[["starships"]]))
+
+# # Some challenge questions:
+# Which film (see films) has the most characters?
+# Create the planet_lookup vector from earlier.
+# Which species has the most possible eye colors?
+
+str(films)
+# skim(films)
+data.tree::FromListSimple(films)
+films[1]
+map(films, ~ .x[["characters"]]) %>% map(length)
+map(films, "characters") %>% 
+  map_int(length) %>% 
+  set_names(map_chr(films, "title"))
+
+head(planet_lookup)
+map_chr(planets, ~.x[["name"]]) %>% set_names(map_chr(planets, "url"))
+
+map_chr(species, "eye_colors") %>% str_split(",") %>% map_int(length)
+
+# purrr and list columns --------------------------------------------------
+
+
+# in people, cases are the characters, and variables are the items in the list
+# can see code/star_wars-tbl.R
+people_tbl <- tibble(
+  name = people %>% map_chr("name"),
+  films = people %>% map("films"), # returns a list!
+  height = people %>% map_chr("height") %>% 
+    readr::parse_number(na = "unknown"),
+  species = people %>% map_chr("species", .null = NA_character_)
+)
+str(people_tbl$films)
+people_tbl$films[1] %>% str()
+people_tbl$films[[1]] %>% str()
+
+people_tbl$films
+people_tbl <- people_tbl %>% 
+  mutate(film_numbers = map(films, ~ film_number_lookup[.x]),
+         n_films = map_int(films, length)
+  )
+people_tbl
+people_tbl$films
+people_tbl$film_numbers
+
+# Create a new character column that collapses the film numbers into a single string
+people_tbl$film_numbers[1] %>% str()
+test <- people_tbl$film_numbers[1]
+str(test)
+people_tbl$film_numbers[[1]]  # A vector
+test[1] %>% str()  # A list
+test[[1]] %>% str() # A vector
+paste(test[[1]], collapse = ", ")
+paste(people_tbl$film_numbers[[1]], collapse = ", ") #NEED TO DO ALL OF THIS WITH A MAP INSIDE MUTATE()
+
+people_tbl %>% 
+  mutate(film_squashed = map_chr(film_numbers, ~ paste(.x, collapse = ", ")))
+
+
+# More iteration functions ------------------------------------------------
+
+?download.file
+# url, destfile
+?rnorm
+# n, mean?
+?lm
+# formula, data
+?predict.lm
+# object, newdata
+?write.csv
+# x, file
+
+
+# NEISS -------------------------------------------------------------------
+
+load("data/neiss_by_day.rda")
+per_day
+per_day[[1]]
+plots <- map(per_day, ~ ggplot(.x, aes(trmt_date, count)) + geom_line())
+
+?invoke_map
